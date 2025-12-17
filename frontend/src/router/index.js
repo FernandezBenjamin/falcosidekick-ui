@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 /*
-Copyright (C) 2023 The Falco Authors.
+Copyright (C) 2025 The Falco Authors.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,16 +12,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import Vue from 'vue';
-import VueRouter from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 import TestPage from '../views/TestPage.vue';
 import Dashboard from '../views//DashboardPage.vue';
 import EventsPage from '../views/EventsPage.vue';
 import InfoPage from '../views/InfoPage.vue';
 import LoginPage from '../views/LoginPage.vue';
 import store from '../store';
-
-Vue.use(VueRouter);
 
 const routes = [
   {
@@ -50,16 +47,15 @@ const routes = [
     component: LoginPage,
   },
   {
-    path: '*',
+    path: '/:pathMatch(.*)*',
     redirect: {
       name: 'dashboard',
     },
   },
 ];
 
-const router = new VueRouter({
-  mode: 'hash',
-  base: process.env.BASE_URL,
+const router = createRouter({
+  history: createWebHashHistory(process.env.BASE_URL),
   routes,
 });
 

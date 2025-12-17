@@ -1,28 +1,31 @@
 <template>
-  <v-app app>
-    <v-app-bar app class="blue darken-2" dark>
+  <v-app>
+    <v-app-bar color="blue-darken-2" theme="dark">
       <v-img
         src="https://github.com/falcosecurity/falcosidekick/raw/master/imgs/falcosidekick_color.png"
         max-height="40"
         max-width="40"
-        style="margin-bottom: 5px; margin-right: 15px;">
+        class="ml-4 mr-3">
       </v-img>
-      <v-toolbar-title class="text-no-wrap">
+      <v-toolbar-title>
         Falcosidekick UI
       </v-toolbar-title>
       <template v-slot:extension>
-        <v-tabs>
+        <v-tabs color="white">
           <v-tab v-for="(page) in pages" :key="page.title"
-          class="blue darken-2" :to="{ path: page.href, query: $route.query }">
-            {{page.title}}
+          :to="{ path: page.href, query: $route.query }">
+            {{ page.title }}
           </v-tab>
         </v-tabs>
-        refresh
+        <span class="ml-4">refresh</span>
         <v-select
-          style="margin-top: 15px; margin-left: 15px; max-width: 80px;"
+          class="ml-2"
+          style="max-width: 80px;"
           v-model="refresh"
           :items="refreshIntervals"
-          dense
+          density="compact"
+          variant="outlined"
+          hide-details
         ></v-select>
       </template>
       <v-spacer/>
@@ -31,16 +34,14 @@
     <v-main>
       <router-view></router-view>
     </v-main>
-    <v-footer app absolute
-      class="blue darken-2 text-no-wrap" dark
-    >
+    <v-footer color="blue-darken-2" theme="dark" app>
       <span>
-        2023 - <a href="https://github.com/falcosecurity/falcosidekick-ui">Falco Authors</a>
+        2025 - <a href="https://github.com/falcosecurity/falcosidekick-ui" class="text-white">Falco Authors</a>
       </span>
       <v-spacer/>
       <span v-if="$store.state.username && $store.state.password">
-        logged as <b>{{$store.state.username}}</b>
-        <v-btn text x-small class="ml-3" @click="logout">
+        logged as <b>{{ $store.state.username }}</b>
+        <v-btn variant="text" size="small" class="ml-3" @click="logout">
           Logout
         </v-btn>
       </span>
@@ -48,95 +49,77 @@
   </v-app>
 </template>
 
-<script>
-import { mapActions } from 'vuex';
+<script setup>
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useStore } from 'vuex';
 import Counters from './components/counters.vue';
 
-export default {
-  name: 'App',
-  components: {
-    Counters,
+const router = useRouter();
+const route = useRoute();
+const store = useStore();
+
+const pages = ref([
+  {
+    href: '/dashboard',
+    router: true,
+    title: 'Dashboard',
   },
-  data() {
-    return {
-      pages: [
-        {
-          href: '/dashboard',
-          router: true,
-          title: 'Dashboard',
-        }, {
-          href: '/events',
-          router: true,
-          title: 'Events',
-        },
-        {
-          href: '/info',
-          router: true,
-          title: 'Info',
-        },
-        // {
-        //   href: 'test',
-        //   router: true,
-        //   title: 'Test',
-        // },
-      ],
-      timer: '',
-      refresh: '10s',
-    };
+  {
+    href: '/events',
+    router: true,
+    title: 'Events',
   },
-  computed: {
-    refreshInterval() {
-      return this.$store.state.refreshInterval;
-    },
-    refreshIntervals() {
-      return this.$store.state.refreshIntervals;
-    },
+  {
+    href: '/info',
+    router: true,
+    title: 'Info',
   },
-  watch: {
-    refresh: {
-      handler() {
-        this.setRefreshInterval(this.refresh);
-        this.setTimer();
-        if (this.$route.query.refresh !== this.refresh || this.$route.query.refresh === '') {
-          this.$router.push({ query: { ...this.$route.query, refresh: this.refresh } });
-        }
-      },
-    },
-  },
-  methods: {
-    ...mapActions([
-      'increment',
-      'setRefreshInterval',
-    ]),
-    logout() {
-      this.$store.state.username = '';
-      this.$store.state.password = '';
-      this.$router.push('/login');
-    },
-    cancelAutoUpdate() {
-      clearInterval(this.timer);
-    },
-    setTimer() {
-      clearInterval(this.timer);
-      this.timer = setInterval(() => {
-        if (this.refreshInterval !== 0) {
-          this.increment();
-        }
-      }, this.$store.state.refreshInterval);
-    },
-  },
-  created() {
-    if (typeof this.$route.query.refresh !== 'undefined') {
-      this.refresh = this.$route.query.refresh;
-      this.setRefreshInterval(this.refresh);
-    }
-    this.setTimer();
-  },
-  beforeDestroy() {
-    this.cancelAutoUpdate();
-  },
+]);
+
+const timer = ref('');
+const refresh = ref('10s');
+
+const refreshInterval = computed(() => store.state.refreshInterval);
+const refreshIntervals = computed(() => store.state.refreshIntervals);
+
+const logout = () => {
+  store.state.username = '';
+  store.state.password = '';
+  router.push('/login');
 };
 
+const cancelAutoUpdate = () => {
+  clearInterval(timer.value);
+};
+
+const setTimer = () => {
+  clearInterval(timer.value);
+  timer.value = setInterval(() => {
+    if (refreshInterval.value !== 0) {
+      store.commit('increment');
+    }
+  }, store.state.refreshInterval);
+};
+
+watch(refresh, () => {
+  store.commit('setRefreshInterval', refresh.value);
+  setTimer();
+  if (route.query.refresh !== refresh.value || route.query.refresh === '') {
+    router.push({ query: { ...route.query, refresh: refresh.value } });
+  }
+});
+
+// Initialize on component mount
+if (typeof route.query.refresh !== 'undefined') {
+  refresh.value = route.query.refresh;
+  store.commit('setRefreshInterval', refresh.value);
+}
+setTimer();
+
+onBeforeUnmount(() => {
+  cancelAutoUpdate();
+});
 </script>
 
 <style scoped>

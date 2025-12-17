@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 #
-# Copyright (C) 2023 The Falco Authors.
+# Copyright (C) 2025 The Falco Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
 # the License. You may obtain a copy of the License at
@@ -52,6 +52,8 @@ cd "${tmp_dir}"
 go mod init fake/mod
 
 # install the golang module specified as the first argument
-go install -tags tools "${1}@${3}"
+# Avoid using the 'tools' build tag, as some dependencies (e.g., gomodguard)
+# include a tools.go that imports binaries and breaks builds when the tag is set.
+go install "${1}@${3}"
 mv "${GOBIN}/${2}" "${GOBIN}/${2}-${3}"
 ln -sf "${GOBIN}/${2}-${3}" "${GOBIN}/${2}"

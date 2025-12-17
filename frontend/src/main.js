@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 /*
-Copyright (C) 2023 The Falco Authors.
+Copyright (C) 2025 The Falco Authors.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,37 +12,45 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import Vue from 'vue';
-import Vuetify from 'vuetify';
+import { createApp } from 'vue';
+import { createVuetify } from 'vuetify';
+import * as components from 'vuetify/components';
+import * as directives from 'vuetify/directives';
 import moment from 'moment';
-import 'vuetify/dist/vuetify.min.css';
+import 'vuetify/styles';
 import '@mdi/font/css/materialdesignicons.css';
 import App from './App.vue';
 import router from './router';
 import store from './store';
 
-const capitalize = function capitalize(value) {
-  if (!value) return '';
-  return value.charAt(0).toUpperCase() + value.slice(1);
+// Create Vuetify instance with all components
+const vuetify = createVuetify({
+  components,
+  directives,
+  theme: {
+    defaultTheme: 'light',
+  },
+});
+
+// Create Vue app
+const app = createApp(App);
+
+// Global filters are removed in Vue 3, convert to global properties
+app.config.globalProperties.$filters = {
+  formatDate(value) {
+    if (!value) return '';
+    return moment(String(value)).format('YYYY/MM/DD HH:mm:ss:SSS');
+  },
+  capitalize(value) {
+    if (!value) return '';
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  },
 };
 
-const formatDate = function formatDate(value) {
-  if (!value) return '';
-  return moment(String(value)).format('YYYY/MM/DD HH:mm:ss:SSS');
-};
+// Use plugins
+app.use(vuetify);
+app.use(router);
+app.use(store);
 
-const opts = {};
-const vuetify = new Vuetify(opts);
-
-Vue.filter('formatDate', formatDate);
-Vue.filter('capitalize', capitalize);
-
-Vue.use(Vuetify);
-
-new Vue({
-  vuetify,
-  router,
-  store,
-  components: { App },
-  render: h => h(App),
-}).$mount('#app');
+// Mount app
+app.mount('#app');

@@ -27,56 +27,51 @@
       </v-col>
     </v-row>
     <v-row>
-      <v-data-table
+      <v-data-table-server
         class="mt-10 ml-5 mr-5"
         :search="search"
-        :page='page'
         :headers='headers'
         :items='events'
         item-key="time"
-        :options.sync='options'
-        :server-items-length='totalEvents'
-        :items-per-page="itemsPerPage"
+        :items-length='totalEvents'
+        v-model:page="page"
+        v-model:items-per-page="itemsPerPage"
+        :items-per-page-options="itemsPerPageInterval"
         :loading='loading'
-        :footer-props="{
-          'items-per-page-options': itemsPerPageInterval,
-          firstIcon: 'mdi-minus',
-          lastIcon: 'mdi-plus',
-          prevIcon: 'mdi-chevron-left',
-          nextIcon: 'mdi-chevron-right'
-        }"
+        @update:page="searchEvents"
+        @update:items-per-page="resetPage(); searchEvents()"
       >
-        <template v-slot:item="{item}">
+        <template v-slot:item="{ item }">
           <tr>
-            <td>{{ item.time | formatDate }}</td>
+            <td>{{ $filters.formatDate(item.raw.time) }}</td>
             <td>
               <v-chip dark
-              @click="addToFilters('sources', item.source)"
-              :color="stringToColor(item.source)">
-              {{ item.source }}
+              @click="addToFilters('sources', item.raw.source)"
+              :color="stringToColor(item.raw.source)">
+              {{ item.raw.source }}
               </v-chip>
             </td>
             <td>
-              <v-chip dark v-if="item.hostname"
-              @click="addToFilters('hostnames', item.hostname)"
-              :color="stringToColor(item.hostname)">
-              {{ item.hostname }}
+              <v-chip dark v-if="item.raw.hostname"
+              @click="addToFilters('hostnames', item.raw.hostname)"
+              :color="stringToColor(item.raw.hostname)">
+              {{ item.raw.hostname }}
               </v-chip>
             </td>
             <td>
               <v-chip
-              @click="addToFilters('priorities', item.priority)"
-              :color="priorityToColor(item.priority)"
+              @click="addToFilters('priorities', item.raw.priority)"
+              :color="priorityToColor(item.raw.priority)"
               dark>
-                {{ item.priority }}
+                {{ item.raw.priority }}
               </v-chip>
             </td>
-            <td>{{ item.rule }}</td>
+            <td>{{ item.raw.rule }}</td>
             <td>
-              <div>{{ item.output }}</div>
+              <div>{{ item.raw.output }}</div>
               <div>
                 <span
-                v-for="(value,key) in item.output_fields" :key="key">
+                v-for="(value,key) in item.raw.output_fields" :key="key">
                 <v-chip small label
                 @click="addToFilters('search', key)"
                 class="rounded-0 mb-1"
@@ -96,7 +91,7 @@
               <v-chip
               class="mb-1 mr-1 mt-1"
               @click="addToFilters('tags', tag)"
-              v-for="(tag, index) in item.tags" :key="index"
+              v-for="(tag, index) in item.raw.tags" :key="index"
               dark small
               :color="stringToColor(tag)">
               {{tag}}
@@ -106,14 +101,14 @@
               <v-btn
                 x-small
                 :icon="true"
-                @click="showDialog(item);"
+                @click="showDialog(item.raw);"
               >
                 <v-icon>mdi-code-json</v-icon>
               </v-btn>
             </td>
           </tr>
         </template>
-      </v-data-table>
+      </v-data-table-server>
     </v-row>
     <v-dialog
       v-model="dialog"
@@ -230,196 +225,180 @@
   </v-card>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue';
+import { useStore } from 'vuex';
+import { useRouter, useRoute } from 'vue-router';
 import 'vue-json-pretty/lib/styles.css';
 import VueJsonPretty from 'vue-json-pretty';
 import { requests } from '../http';
 import { utils } from '../utils';
-import Counters from '../components/counters.vue';
 import Filters from '../components/filters.vue';
 
-export default {
-  name: 'DatatableComponent',
-  components: {
-    Counters,
-    Filters,
-    VueJsonPretty,
-  },
-  data() {
-    return {
-      search: '',
-      page: 1,
-      itemsPerPage: 10,
-      itemsPerPageInterval: [10, 50, 100, 200, 500, 1000],
-      totalEvents: 0,
-      events: [],
-      priorities: [],
-      rules: [],
-      sources: [],
-      hostnames: [],
-      tags: [],
-      filters: {
-        sources: [],
-        hostnames: [],
-        priorities: [],
-        rule: '',
-        tags: [],
-        since: '24h',
-        search: '',
-      },
-      newItem: {
-        list: '',
-        item: '',
-      },
-      loading: true,
-      options: {
-        page: 1,
-        itemsPerPage: 10,
-      },
-      headers: [
-        { text: 'Timestamp', value: 'time' },
-        { text: 'Source', value: 'source' },
-        { text: 'Hostname', value: 'hostname' },
-        { text: 'Priority', value: 'priority' },
-        { text: 'Rule', value: 'rule' },
-        { text: 'Output', value: 'output' },
-        { text: 'Tags', value: 'tags' },
-        { text: '', value: 'json' },
-      ],
-      debounce: null,
-      dialog: false,
-      dialogDetails: true,
-      dialogJson: false,
-      json: '',
-      copied: false,
-    };
-  },
-  computed: {
-    ticer() {
-      return this.$store.state.ticer;
-    },
-  },
-  watch: {
-    options: {
-      handler() {
-        this.searchEvents();
-      },
-    },
-    filters: {
-      handler() {
-        this.resetPage();
-        this.searchEvents();
-      },
-      deep: true,
-    },
-    search: {
-      handler() {
-        clearTimeout(this.debounce);
-        this.debounce = setTimeout(() => {
-          this.resetPage();
-          this.searchEvents();
-        }, 600);
-      },
-    },
-    ticer: {
-      handler() {
-        if (this.page === 1) {
-          this.searchEvents();
-        }
-      },
-    },
-  },
-  methods: {
-    resetPage() {
-      this.page = 1;
-      this.options.page = 1;
-    },
-    searchEvents() {
-      this.loading = true;
-      const { page, itemsPerPage } = this.options;
-      if (this.page !== page) {
-        this.page = page;
-        this.$router.push({ query: { ...this.$route.query, page: this.page } });
-      }
-      if (this.itemsPerPage !== itemsPerPage) {
-        this.itemsPerPage = itemsPerPage;
-        this.$router.push({ query: { ...this.$route.query, limit: this.itemsPerPage } });
-      }
-      if (this.$route.query.filter !== this.search && this.search !== '') {
-        this.$router.push({ query: { ...this.$route.query, filter: this.search } });
-      }
-      requests.searchEvents(
-        this.filters.sources,
-        this.filters.hostnames,
-        this.filters.priorities,
-        this.filters.rule,
-        this.filters.search,
-        this.filters.tags,
-        this.filters.since,
-        page,
-        itemsPerPage,
-      )
-        .then((response) => {
-          this.loading = false;
-          this.events = response.data.results;
-          this.totalEvents = response.data.statistics.all;
-        });
-    },
-    priorityToColor(prio) {
-      return utils.priorityToColor(prio);
-    },
-    stringToColor(str) {
-      return utils.stringToColor(str);
-    },
-    setFilters(f) {
-      this.filters = f;
-    },
-    addToFilters(l, i) {
-      this.newItem = {
-        list: l,
-        item: i,
-      };
-    },
-    showDialog(i) {
-      this.dialog = true;
-      this.json = i;
-    },
-    copyToClipBoard() {
-      navigator.clipboard.writeText(JSON.stringify(this.json));
-    },
-    saveFile() {
-      let text;
-      requests.searchEvents(
-        this.filters.sources,
-        this.filters.hostnames,
-        this.filters.priorities,
-        this.filters.rule,
-        this.filters.search,
-        this.filters.tags,
-        this.filters.since,
-        0,
-        10000,
-      )
-        .then((response) => {
-          text = JSON.stringify(response.data.results);
-          const filename = 'falco_events.json';
-          const element = document.createElement('a');
-          const href = `data:application/json;charset=utf-8,${encodeURIComponent(text)}`;
-          element.setAttribute('href', href);
-          element.setAttribute('download', filename);
+const router = useRouter();
+const route = useRoute();
+const store = useStore();
 
-          element.style.display = 'none';
-          document.body.appendChild(element);
+const search = ref('');
+const page = ref(1);
+const itemsPerPage = ref(10);
+const itemsPerPageInterval = [10, 50, 100, 200, 500, 1000];
+const totalEvents = ref(0);
+const events = ref([]);
+const filters = ref({
+  sources: [],
+  hostnames: [],
+  priorities: [],
+  rule: '',
+  tags: [],
+  since: '24h',
+  search: '',
+});
+const newItem = ref({
+  list: '',
+  item: '',
+});
+const loading = ref(true);
+const headers = ref([
+  { text: 'Timestamp', value: 'time' },
+  { text: 'Source', value: 'source' },
+  { text: 'Hostname', value: 'hostname' },
+  { text: 'Priority', value: 'priority' },
+  { text: 'Rule', value: 'rule' },
+  { text: 'Output', value: 'output' },
+  { text: 'Tags', value: 'tags' },
+  { text: '', value: 'json' },
+]);
+const debounce = ref(null);
+const dialog = ref(false);
+const dialogDetails = ref(true);
+const dialogJson = ref(false);
+const json = ref('');
+const copied = ref(false);
 
-          element.click();
-          document.body.removeChild(element);
-        });
-    },
-  },
-  mounted() {
-    this.searchEvents();
-  },
+const ticer = computed(() => store.state.ticer);
+
+const resetPage = () => {
+  page.value = 1;
+  options.value.page = 1;
 };
+
+const searchEvents = async () => {
+  loading.value = true;
+  const currentPage = page.value;
+  const currentItemsPerPage = itemsPerPage.value;
+  router.push({ query: { ...route.query, page: currentPage, limit: currentItemsPerPage } });
+  if (route.query.filter !== search.value && search.value !== '') {
+    router.push({ query: { ...route.query, filter: search.value } });
+  }
+  try {
+    const response = await requests.searchEvents(
+      filters.value.sources,
+      filters.value.hostnames,
+      filters.value.priorities,
+      filters.value.rule,
+      filters.value.search,
+      filters.value.tags,
+      filters.value.since,
+      currentPage,
+      currentItemsPerPage,
+    );
+    loading.value = false;
+    events.value = response.data.results;
+    totalEvents.value = response.data.statistics.all;
+  } catch (error) {
+    loading.value = false;
+    console.error('Error searching events:', error);
+  }
+};
+
+const priorityToColor = (prio) => {
+  return utils.priorityToColor(prio);
+};
+
+const stringToColor = (str) => {
+  return utils.stringToColor(str);
+};
+
+const setFilters = (f) => {
+  filters.value = f;
+};
+
+const addToFilters = (l, i) => {
+  newItem.value = {
+    list: l,
+    item: i,
+  };
+};
+
+const showDialog = (i) => {
+  dialog.value = true;
+  json.value = i;
+};
+
+const copyToClipBoard = () => {
+  navigator.clipboard.writeText(JSON.stringify(json.value));
+};
+
+const saveFile = async () => {
+  try {
+    const response = await requests.searchEvents(
+      filters.value.sources,
+      filters.value.hostnames,
+      filters.value.priorities,
+      filters.value.rule,
+      filters.value.search,
+      filters.value.tags,
+      filters.value.since,
+      0,
+      10000,
+    );
+    const text = JSON.stringify(response.data.results);
+    const filename = 'falco_events.json';
+    const element = document.createElement('a');
+    const href = `data:application/json;charset=utf-8,${encodeURIComponent(text)}`;
+    element.setAttribute('href', href);
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  } catch (error) {
+    console.error('Error saving file:', error);
+  }
+};
+
+watch(page, () => {
+  searchEvents();
+});
+
+watch(itemsPerPage, () => {
+  resetPage();
+  searchEvents();
+});
+
+watch(() => filters.value, () => {
+  resetPage();
+  searchEvents();
+}, { deep: true });
+
+watch(() => search.value, () => {
+  clearTimeout(debounce.value);
+  debounce.value = setTimeout(() => {
+    resetPage();
+    searchEvents();
+  }, 600);
+});
+
+watch(ticer, () => {
+  if (page.value === 1) {
+    searchEvents();
+  }
+});
+
+onMounted(() => {
+  searchEvents();
+});
 </script>
 
 <style>

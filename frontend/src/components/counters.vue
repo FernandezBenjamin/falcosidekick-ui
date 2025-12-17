@@ -29,86 +29,71 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue';
+import { useStore } from 'vuex';
 import { requests } from '../http';
 import { utils } from '../utils';
 
-export default {
-  name: 'Counters',
-  props: {
-    filters: {
-      type: Object,
-      default() {
-        return {
-          priorities: [],
-          rule: '',
-          tags: [],
-          sources: [],
-          hostnames: [],
-          search: '',
-          since: '',
-        };
-      },
+const props = defineProps({
+  filters: {
+    type: Object,
+    default() {
+      return {
+        priorities: [],
+        rule: '',
+        tags: [],
+        sources: [],
+        hostnames: [],
+        search: '',
+        since: '',
+      };
     },
   },
-  data() {
-    return {
-      count: 0,
-      countByPriority: {
-        statistics: {
-          all: 0,
-        },
-      },
-    };
+});
+
+const emit = defineEmits(['add-item-to-filters']);
+const store = useStore();
+
+const countByPriority = ref({
+  statistics: {
+    all: 0,
   },
-  computed: {
-    ticer() {
-      return this.$store.state.ticer;
-    },
-  },
-  watch: {
-    filters: {
-      handler() {
-        this.updateChart();
-      },
-      deep: true,
-    },
-    ticer: {
-      handler() {
-        this.updateChart();
-      },
-    },
-  },
-  methods: {
-    priorityToColor(prio) {
-      return utils.priorityToColor(prio);
-    },
-    updateChart() {
-      // this.countByPriority = {
-      //   statistics: {
-      //     all: 0,
-      //   },
-      // };
-      requests.countByEvents(
-        'priority',
-        this.filters.sources,
-        this.filters.hostnames,
-        this.filters.priorities,
-        this.filters.rule,
-        this.filters.search,
-        this.filters.tags,
-        this.filters.since,
-      )
-        .then((response) => {
-          this.countByPriority = response.data;
-        });
-    },
-    addItemToList(item) {
-      this.$emit('add-item-to-filters', item);
-    },
-  },
-  mounted() {
-    this.updateChart();
-  },
+});
+
+const ticer = computed(() => store.state.ticer);
+
+const priorityToColor = (prio) => {
+  return utils.priorityToColor(prio);
 };
+
+const updateChart = async () => {
+  const response = await requests.countByEvents(
+    'priority',
+    props.filters.sources,
+    props.filters.hostnames,
+    props.filters.priorities,
+    props.filters.rule,
+    props.filters.search,
+    props.filters.tags,
+    props.filters.since,
+  );
+  countByPriority.value = response.data;
+};
+
+const addItemToList = (item) => {
+  emit('add-item-to-filters', item);
+};
+
+watch(() => props.filters, () => {
+  updateChart();
+}, { deep: true });
+
+watch(ticer, () => {
+  updateChart();
+});
+
+onMounted(() => {
+  updateChart();
+});
 </script>

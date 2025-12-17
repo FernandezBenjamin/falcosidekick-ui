@@ -100,48 +100,37 @@
   </v-card>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue';
 import BarChart from '../components/charts/bar.vue';
 import PieChart from '../components/charts/pie.vue';
 import TimelineChart from '../components/charts/timeline.vue';
 import Filters from '../components/filters.vue';
 
-export default {
-  name: 'Dashboard',
-  components: {
-    PieChart,
-    BarChart,
-    TimelineChart,
-    Filters,
-  },
-  data() {
-    return {
-      newItem: {
-        list: '',
-        item: '',
-      },
-      filters: {
-        priorities: [],
-        sources: [],
-        hostnames: [],
-        tags: [],
-        rule: '',
-        since: '24h',
-        search: '',
-      },
-    };
-  },
-  methods: {
-    setFilters(f) {
-      this.filters = f;
-    },
-    addToFilters(l, i) {
-      this.newItem = {
-        list: l,
-        item: i,
-      };
-    },
-  },
+const newItem = ref({
+  list: '',
+  item: '',
+});
+
+const filters = ref({
+  priorities: [],
+  sources: [],
+  hostnames: [],
+  tags: [],
+  rule: '',
+  since: '24h',
+  search: '',
+});
+
+const setFilters = (f) => {
+  filters.value = f;
+};
+
+const addToFilters = (l, i) => {
+  newItem.value = {
+    list: l,
+    item: i,
+  };
 };
 </script>
 

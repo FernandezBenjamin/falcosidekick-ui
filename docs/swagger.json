@@ -416,6 +416,9 @@
                 "redis-server": {
                     "type": "string"
                 },
+                "redis-username": {
+                    "type": "string"
+                },
                 "ttl": {
                     "type": "integer"
                 }
@@ -521,7 +524,8 @@
                 "results": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "integer"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 },
                 "statistics": {

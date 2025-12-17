@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 /*
-Copyright (C) 2023 The Falco Authors.
+Copyright (C) 2025 The Falco Authors.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,7 +12,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-const crypto = require('crypto');
+// Simple hash function for browser (replaces Node.js crypto)
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  // Convert to positive hex and pad to 6 characters
+  return Math.abs(hash).toString(16).padStart(6, '0').substring(0, 6);
+}
 
 export const utils = {
   priorityToColor(priority) {
@@ -38,7 +48,7 @@ export const utils = {
     }
   },
   stringToColor(str) {
-    return `#${crypto.createHash('md5').update(str).digest('hex').substring(0, 6)}`;
+    return `#${simpleHash(str)}`;
   },
 };
 

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# Copyright (C) 2023 The Falco Authors.
+# Copyright (C) 2025 The Falco Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
 # the License. You may obtain a copy of the License at
@@ -35,19 +35,30 @@ TOOLS_BIN_DIR := $(abspath $(TOOLS_DIR)/bin)
 GO_INSTALL = tools/go_install.sh
 
 # Binaries.
-GOLANGCI_LINT_VER := v1.52.2
+GOLANGCI_LINT_VER := v2.7.2
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
-GIT_TAG ?= dirty-tag
-GIT_VERSION ?= $(shell git describe --tags --always --dirty)
+SWAG_VER := v1.16.6
+SWAG_BIN := swag
+SWAG := $(TOOLS_BIN_DIR)/$(SWAG_BIN)-$(SWAG_VER)
+
 GIT_HASH ?= $(shell git rev-parse HEAD)
+GIT_SHORT ?= $(shell git rev-parse --short HEAD)
+GIT_TAG := $(shell git describe --tags --exact-match 2>/dev/null)
+GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+# Allow overriding the displayed version via BUILD_VERSION, otherwise:
+# - If on a tag, use the tag
+# - Else use branch-shortsha, and append -dirty when there are local changes
+GIT_VERSION ?= $(if $(BUILD_VERSION),$(BUILD_VERSION),$(if $(GIT_TAG),$(GIT_TAG),$(GIT_BRANCH)-$(GIT_SHORT)$(if $(DIFF),-dirty)))
 DATE_FMT = +'%Y-%m-%dT%H:%M:%SZ'
-SOURCE_DATE_EPOCH ?= $(shell git log -1 --pretty=%ct)
-ifdef SOURCE_DATE_EPOCH
-    BUILD_DATE ?= $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" "$(DATE_FMT)" 2>/dev/null || date -u -r "$(SOURCE_DATE_EPOCH)" "$(DATE_FMT)" 2>/dev/null || date -u "$(DATE_FMT)")
+# Prefer current UTC time for BuildDate unless USE_SOURCE_DATE_EPOCH=1 is set
+USE_SOURCE_DATE_EPOCH ?= 0
+ifeq ($(USE_SOURCE_DATE_EPOCH),1)
+	SOURCE_DATE_EPOCH := $(shell git log -1 --pretty=%ct)
+	BUILD_DATE ?= $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" "$(DATE_FMT)" 2>/dev/null || date -u -r "$(SOURCE_DATE_EPOCH)" "$(DATE_FMT)" 2>/dev/null || date -u "$(DATE_FMT)")
 else
-    BUILD_DATE ?= $(shell date "$(DATE_FMT)")
+	BUILD_DATE ?= $(shell date -u "$(DATE_FMT)")
 endif
 GIT_TREESTATE = "clean"
 DIFF = $(shell git diff --quiet >/dev/null 2>&1; if [ $$? -eq 1 ]; then echo "1"; fi)
@@ -71,9 +82,9 @@ server:
 ## --------------------------------------
 
 .PHONY: docs
-docs:
-	swag fmt
-	swag init
+docs: $(SWAG)
+	$(SWAG) fmt
+	$(SWAG) init
 
 ## --------------------------------------
 ## Build
@@ -93,7 +104,7 @@ falcosidekick-ui: frontend
 .PHONY: falcosidekick-ui-linux-amd64
 falcosidekick-ui-linux-amd64: frontend
 	$(GO) mod download
-	GOOS=linux GOARCH=amd64 $(GO) build -gcflags all=-trimpath=/src -asmflags all=-trimpath=/src -a -installsuffix cgo -o falcosidekick-ui .
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -gcflags all=-trimpath=/src -asmflags all=-trimpath=/src -a -installsuffix cgo -ldflags "$(LDFLAGS) -extldflags '-static'" -o falcosidekick-ui .
 
 .PHONY: falcosidekick-ui-backend-only
 falcosidekick-ui-backend-only:
@@ -101,9 +112,9 @@ falcosidekick-ui-backend-only:
 	$(GO) build -trimpath -ldflags "$(LDFLAGS)" -o falcosidekick-ui .
 
 .PHONY: falcosidekick-ui-linux-amd64-backend-only
-falcosidekick-ui-linux-amd64:
+falcosidekick-ui-linux-amd64-backend-only:
 	$(GO) mod download
-	GOOS=linux GOARCH=amd64 $(GO) build -gcflags all=-trimpath=/src -asmflags all=-trimpath=/src -a -installsuffix cgo -o falcosidekick-ui .
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -gcflags all=-trimpath=/src -asmflags all=-trimpath=/src -a -installsuffix cgo -ldflags "$(LDFLAGS) -extldflags '-static'" -o falcosidekick-ui .
 
 .PHONY: build-image
 build-image:
@@ -149,8 +160,15 @@ goreleaser-snapshot: ## Release snapshot using goreleaser
 ## Tooling Binaries
 ## --------------------------------------
 
-$(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
+$(GOLANGCI_LINT): ## Install golangci-lint prebuilt binary
+	@mkdir -p $(TOOLS_BIN_DIR)
+	bash tools/install_golangci.sh $(GOLANGCI_LINT_VER) $(TOOLS_BIN_DIR)
+
+$(SWAG): ## Install swag from source
+	@mkdir -p $(TOOLS_BIN_DIR)
+	GOBIN=$(TOOLS_BIN_DIR) $(GO) install github.com/swaggo/swag/cmd/swag@$(SWAG_VER)
+	@mv $(TOOLS_BIN_DIR)/$(SWAG_BIN) $(TOOLS_BIN_DIR)/$(SWAG_BIN)-$(SWAG_VER)
+	@ln -sf $(SWAG_BIN)-$(SWAG_VER) $(TOOLS_BIN_DIR)/$(SWAG_BIN)
 
 ## --------------------------------------
 ## Cleanup / Verification

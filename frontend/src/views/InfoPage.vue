@@ -64,56 +64,54 @@
   </v-card>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue';
+import { useStore } from 'vuex';
 import { requests } from '../http';
 
-export default {
-  Name: 'Info',
-  data() {
-    return {
-      outputs: [],
-      version: {},
-      configuration: {},
-    };
-  },
-  computed: {
-    ticer() {
-      return this.$store.state.ticer;
-    },
-  },
-  watch: {
-    ticer: {
-      handler() {
-        this.listOutputs();
-      },
-    },
-  },
-  methods: {
-    listOutputs() {
-      requests.listOutputs()
-        .then((response) => {
-          this.outputs = response.data;
-        });
-    },
-    getConfiguration() {
-      requests.getConfiguration()
-        .then((response) => {
-          this.configuration = response.data;
-        });
-    },
-    getVersion() {
-      requests.getVersion()
-        .then((response) => {
-          this.version = response.data;
-        });
-    },
-  },
-  mounted() {
-    this.listOutputs();
-    this.getConfiguration();
-    this.getVersion();
-    this.getVersion();
-  },
+const store = useStore();
+
+const outputs = ref([]);
+const version = ref({});
+const configuration = ref({});
+
+const ticer = computed(() => store.state.ticer);
+
+const listOutputs = async () => {
+  try {
+    const response = await requests.listOutputs();
+    outputs.value = response.data;
+  } catch (error) {
+    console.error('Error listing outputs:', error);
+  }
 };
+
+const getConfiguration = async () => {
+  try {
+    const response = await requests.getConfiguration();
+    configuration.value = response.data;
+  } catch (error) {
+    console.error('Error getting configuration:', error);
+  }
+};
+
+const getVersion = async () => {
+  try {
+    const response = await requests.getVersion();
+    version.value = response.data;
+  } catch (error) {
+    console.error('Error getting version:', error);
+  }
+};
+
+watch(ticer, () => {
+  listOutputs();
+});
+
+onMounted(() => {
+  listOutputs();
+  getConfiguration();
+  getVersion();
+});
 </script>
 

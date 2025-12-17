@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 /*
-Copyright (C) 2023 The Falco Authors.
+Copyright (C) 2025 The Falco Authors.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -121,19 +121,19 @@ func init() {
 	models.CreateOutputs()
 }
 
-// @title          Falcosidekick UI
-// @version        1.0
-// @description    Falcosidekick UI
-// @contact.name   Falco Authors
-// @contact.url    https://github.com/falcosecurity
-// @contact.email  cncf-falco-dev@lists.cncf.io
-// @license.name   Apache 2.0
-// @license.url    http://www.apache.org/licenses/LICENSE-2.0.html
-// @accept         json
-// @produce        json
-// @schemes        http
-// @host           <your-domain>:2802
-// @BasePath       /api/v1
+// @title			Falcosidekick UI
+// @version		1.0
+// @description	Falcosidekick UI
+// @contact.name	Falco Authors
+// @contact.url	https://github.com/falcosecurity
+// @contact.email	cncf-falco-dev@lists.cncf.io
+// @license.name	Apache 2.0
+// @license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+// @accept			json
+// @produce		json
+// @schemes		http
+// @host			<your-domain>:2802
+// @BasePath		/api/v1
 func main() {
 	e := echo.New()
 	v := &CustomValidator{validator: validator.New()}

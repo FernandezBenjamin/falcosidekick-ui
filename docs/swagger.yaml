@@ -21,6 +21,8 @@ definitions:
         type: string
       redis-server:
         type: string
+      redis-username:
+        type: string
       ttl:
         type: integer
     type: object
@@ -91,6 +93,7 @@ definitions:
     properties:
       results:
         additionalProperties:
+          format: int64
           type: integer
         type: object
       statistics:

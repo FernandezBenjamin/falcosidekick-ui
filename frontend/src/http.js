@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 /*
-Copyright (C) 2023 The Falco Authors.
+Copyright (C) 2025 The Falco Authors.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -63,18 +63,19 @@ export const requests = {
     });
   },
   countEvents(source, hostname, priority, rule, filter, tags, since) {
+    const params = {};
+    if (source && source.length > 0) params.source = Array.isArray(source) ? source.join(',') : `${source}`;
+    if (hostname && hostname.length > 0) params.hostname = Array.isArray(hostname) ? hostname.join(',') : `${hostname}`;
+    if (priority && priority.length > 0) params.priority = Array.isArray(priority) ? priority.join(',') : `${priority}`;
+    if (rule && rule.length > 0) params.rule = Array.isArray(rule) ? rule.join(',') : `${rule}`;
+    if (filter && filter.length > 0) params.filter = `${filter}`;
+    if (tags && tags.length > 0 && tags[0]) params.tags = Array.isArray(tags) ? tags.join(',') : `${tags}`;
+    if (since && since.length > 0) params.since = `${since}`;
+
     return api.request({
       url: '/events/count',
       method: 'get',
-      params: {
-        source: `${source}`,
-        hostname: `${hostname}`,
-        priority: `${priority}`,
-        rule: `${rule}`,
-        filter: `${filter}`,
-        tags: `${tags}`,
-        since: `${since}`,
-      },
+      params,
       auth: {
         username: store.state.username,
         password: store.state.password,
@@ -82,18 +83,19 @@ export const requests = {
     });
   },
   countByEvents(group, source, hostname, priority, rule, filter, tags, since) {
+    const params = {};
+    if (source && source.length > 0) params.source = Array.isArray(source) ? source.join(',') : `${source}`;
+    if (hostname && hostname.length > 0) params.hostname = Array.isArray(hostname) ? hostname.join(',') : `${hostname}`;
+    if (priority && priority.length > 0) params.priority = Array.isArray(priority) ? priority.join(',') : `${priority}`;
+    if (rule && rule.length > 0) params.rule = Array.isArray(rule) ? rule.join(',') : `${rule}`;
+    if (filter && filter.length > 0) params.filter = `${filter}`;
+    if (tags && tags.length > 0 && tags[0]) params.tags = Array.isArray(tags) ? tags.join(',') : `${tags}`;
+    if (since && since.length > 0) params.since = `${since}`;
+
     return api.request({
       url: `/events/count/${group}`,
       method: 'get',
-      params: {
-        source: `${source}`,
-        hostname: `${hostname}`,
-        priority: `${priority}`,
-        rule: `${rule}`,
-        filter: `${filter}`,
-        tags: `${tags}`,
-        since: `${since}`,
-      },
+      params,
       auth: {
         username: store.state.username,
         password: store.state.password,
@@ -101,20 +103,21 @@ export const requests = {
     });
   },
   searchEvents(source, hostname, priority, rule, filter, tags, since, page, limit) {
+    const params = {};
+    if (source && source.length > 0) params.source = Array.isArray(source) ? source.join(',') : `${source}`;
+    if (hostname && hostname.length > 0) params.hostname = Array.isArray(hostname) ? hostname.join(',') : `${hostname}`;
+    if (priority && priority.length > 0) params.priority = Array.isArray(priority) ? priority.join(',') : `${priority}`;
+    if (rule && rule.length > 0) params.rule = Array.isArray(rule) ? rule.join(',') : `${rule}`;
+    if (filter && filter.length > 0) params.filter = `${filter}`;
+    if (tags && tags.length > 0 && tags[0]) params.tags = Array.isArray(tags) ? tags.join(',') : `${tags}`;
+    if (since && since.length > 0) params.since = `${since}`;
+    params.page = page;
+    params.limit = limit;
+
     return api.request({
       url: '/events/search',
       method: 'get',
-      params: {
-        source: `${source}`,
-        hostname: `${hostname}`,
-        priority: `${priority}`,
-        rule: `${rule}`,
-        filter: `${filter}`,
-        tags: `${tags}`,
-        since: `${since}`,
-        page: `${page}`,
-        limit: `${limit}`,
-      },
+      params,
       auth: {
         username: store.state.username,
         password: store.state.password,
