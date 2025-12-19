@@ -41,72 +41,72 @@
         @update:page="searchEvents"
         @update:items-per-page="resetPage(); searchEvents()"
       >
-        <template v-slot:item="{ item }">
-          <tr>
-            <td>{{ $filters.formatDate(item.raw.time) }}</td>
-            <td>
-              <v-chip dark
-              @click="addToFilters('sources', item.raw.source)"
-              :color="stringToColor(item.raw.source)">
-              {{ item.raw.source }}
-              </v-chip>
-            </td>
-            <td>
-              <v-chip dark v-if="item.raw.hostname"
-              @click="addToFilters('hostnames', item.raw.hostname)"
-              :color="stringToColor(item.raw.hostname)">
-              {{ item.raw.hostname }}
-              </v-chip>
-            </td>
-            <td>
-              <v-chip
-              @click="addToFilters('priorities', item.raw.priority)"
-              :color="priorityToColor(item.raw.priority)"
-              dark>
-                {{ item.raw.priority }}
-              </v-chip>
-            </td>
-            <td>{{ item.raw.rule }}</td>
-            <td>
-              <div>{{ item.raw.output }}</div>
-              <div>
-                <span
-                v-for="(value,key) in item.raw.output_fields" :key="key">
-                <v-chip small label
-                @click="addToFilters('search', key)"
-                class="rounded-0 mb-1"
-                color="blue lighten-3">
-                  {{key}}
-                </v-chip>
-                <v-chip small label
-                @click="addToFilters('search', value)"
-                class="rounded-0 mb-1"
-                style="margin-left: -4px; margin-right: 5px;">
-                  {{value}}
-                </v-chip>
-                </span>
-              </div>
-            </td>
-            <td>
-              <v-chip
-              class="mb-1 mr-1 mt-1"
-              @click="addToFilters('tags', tag)"
-              v-for="(tag, index) in item.raw.tags" :key="index"
-              dark small
-              :color="stringToColor(tag)">
-              {{tag}}
-              </v-chip>
-            </td>
-            <td>
-              <v-btn
-                x-small
-                :icon="true"
-                @click="showDialog(item.raw);"
-              >
-                <v-icon>mdi-code-json</v-icon>
-              </v-btn>
-            </td>
-          </tr>
+        <template v-slot:item.time="{ item }">
+          {{ $filters.formatDate(item.time) }}
+        </template>
+        <template v-slot:item.source="{ item }">
+          <v-chip dark
+          @click="addToFilters('sources', item.source)"
+          :color="stringToColor(item.source)">
+          {{ item.source }}
+          </v-chip>
+        </template>
+        <template v-slot:item.hostname="{ item }">
+          <v-chip dark v-if="item.hostname"
+          @click="addToFilters('hostnames', item.hostname)"
+          :color="stringToColor(item.hostname)">
+          {{ item.hostname }}
+          </v-chip>
+        </template>
+        <template v-slot:item.priority="{ item }">
+          <v-chip
+          @click="addToFilters('priorities', item.priority)"
+          :color="priorityToColor(item.priority)"
+          dark>
+            {{ item.priority }}
+          </v-chip>
+        </template>
+        <template v-slot:item.rule="{ item }">
+          {{ item.rule }}
+        </template>
+        <template v-slot:item.output="{ item }">
+          <div>{{ item.output }}</div>
+          <div>
+            <span
+            v-for="(value,key) in item.output_fields" :key="key">
+            <v-chip small label
+            @click="addToFilters('search', key)"
+            class="rounded-0 mb-1"
+            color="blue lighten-3">
+              {{key}}
+            </v-chip>
+            <v-chip small label
+            @click="addToFilters('search', value)"
+            class="rounded-0 mb-1"
+            style="margin-left: -4px; margin-right: 5px;">
+              {{value}}
+            </v-chip>
+            </span>
+          </div>
+        </template>
+        <template v-slot:item.tags="{ item }">
+          <v-chip
+          class="mb-1 mr-1 mt-1"
+          @click="addToFilters('tags', tag)"
+          v-for="(tag, index) in item.tags" :key="index"
+          dark small
+          :color="stringToColor(tag)">
+          {{tag}}
+          </v-chip>
+        </template>
+        <template v-slot:item.json="{ item }">
+          <v-btn
+            x-small
+            :icon="true"
+            @click="showDialog(item);"
+          >
+            <v-icon>mdi-code-json</v-icon>
+          </v-btn>
         </template>
       </v-data-table-server>
     </v-row>
@@ -260,14 +260,14 @@ const newItem = ref({
 });
 const loading = ref(true);
 const headers = ref([
-  { text: 'Timestamp', value: 'time' },
-  { text: 'Source', value: 'source' },
-  { text: 'Hostname', value: 'hostname' },
-  { text: 'Priority', value: 'priority' },
-  { text: 'Rule', value: 'rule' },
-  { text: 'Output', value: 'output' },
-  { text: 'Tags', value: 'tags' },
-  { text: '', value: 'json' },
+  { title: 'Timestamp', key: 'time' },
+  { title: 'Source', key: 'source' },
+  { title: 'Hostname', key: 'hostname' },
+  { title: 'Priority', key: 'priority' },
+  { title: 'Rule', key: 'rule' },
+  { title: 'Output', key: 'output' },
+  { title: 'Tags', key: 'tags' },
+  { title: '', key: 'json' },
 ]);
 const debounce = ref(null);
 const dialog = ref(false);
@@ -280,7 +280,6 @@ const ticer = computed(() => store.state.ticer);
 
 const resetPage = () => {
   page.value = 1;
-  options.value.page = 1;
 };
 
 const searchEvents = async () => {
@@ -304,7 +303,9 @@ const searchEvents = async () => {
       currentItemsPerPage,
     );
     loading.value = false;
-    events.value = response.data.results;
+    // Normalize API results to an array for the data table
+    const res = response.data.results;
+    events.value = Array.isArray(res) ? res : Object.values(res || {});
     totalEvents.value = response.data.statistics.all;
   } catch (error) {
     loading.value = false;

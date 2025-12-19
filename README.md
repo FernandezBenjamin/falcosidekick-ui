@@ -118,8 +118,8 @@ docker run -d -p 6379:6379 redislabs/redisearch:2.2.4
 ### Build
 
 Requirements:
-* `go` >= 1.18
-* `nodejs` >= v14
+* `go` >= 1.25
+* `nodejs` >= v24
 * `yarn` >= 1.22
 
 ```shell
