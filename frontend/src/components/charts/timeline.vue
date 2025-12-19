@@ -9,7 +9,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick, shallowRef } from 'vue';
+import { ref, computed, watch, onMounted, nextTick, shallowRef, toRaw } from 'vue';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
 import { Chart as ChartJS, registerables } from 'chart.js';
@@ -97,14 +97,20 @@ async function searchEvents(page, last) {
   
   console.log('[TimelineChart] Fetching events - page:', page, 'last:', last);
   
+  // Unwrap reactive proxies before passing to API
+  const sources = toRaw(props.filters.sources) || [];
+  const hostnames = toRaw(props.filters.hostnames) || [];
+  const priorities = toRaw(props.filters.priorities) || [];
+  const tags = toRaw(props.filters.tags) || [];
+  
   try {
     const response = await requests.searchEvents(
-      props.filters.sources,
-      props.filters.hostnames,
-      props.filters.priorities,
+      sources,
+      hostnames,
+      priorities,
       props.filters.rule,
       props.filters.search,
-      props.filters.tags,
+      tags,
       props.filters.since,
       page,
       limit,

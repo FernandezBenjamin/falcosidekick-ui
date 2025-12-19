@@ -24,6 +24,7 @@ export default createStore({
     refreshIntervals: ['off', '10s', '20s', '30s', '1min', '2min'],
     username: '',
     password: '',
+    headerFooterColor: 'blue-darken-2',
   },
   mutations: {
     increment(state) {
@@ -61,6 +62,9 @@ export default createStore({
       state.username = '';
       state.password = '';
     },
+    setHeaderFooterColor(state, payload) {
+      state.headerFooterColor = payload;
+    },
   },
   actions: {
     increment(context) {
@@ -74,6 +78,9 @@ export default createStore({
     },
     emptyCredentials(context) {
       context.commit('emptyCredentials');
+    },
+    setHeaderFooterColor(context, payload) {
+      context.commit('setHeaderFooterColor', payload);
     },
   },
 });

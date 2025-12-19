@@ -16,6 +16,7 @@
       dark
       @click="addItemToList(key)"
       class="rounded-0"
+      style="cursor: pointer;"
       :color="priorityToColor(key)">
         {{key}}
       </v-chip>

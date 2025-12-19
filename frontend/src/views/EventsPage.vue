@@ -1,11 +1,11 @@
 <template>
   <v-card class="elevation-0">
-    <v-row>
+    <v-row class="mt-4">
       <v-col
       cols="12"
       sm="12">
         <Filters
-        @send-filters="setFilters(...arguments)"
+        @send-filters="setFilters"
         :addItem="newItem">
         </Filters>
       </v-col>

@@ -9,7 +9,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick, shallowRef } from 'vue';
+import { ref, computed, watch, onMounted, nextTick, shallowRef, toRaw } from 'vue';
 import { useStore } from 'vuex';
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, CategoryScale } from 'chart.js';
 import { requests } from '../../http';
@@ -61,15 +61,23 @@ async function updateChart() {
     since: props.filters.since
   });
   
+  // Unwrap reactive proxies before passing to API
+  const sources = toRaw(props.filters.sources) || [];
+  const hostnames = toRaw(props.filters.hostnames) || [];
+  const priorities = toRaw(props.filters.priorities) || [];
+  const tags = toRaw(props.filters.tags) || [];
+  
+  console.log('[PieChart] Unwrapped tags:', tags, 'Type:', Array.isArray(tags), 'Length:', tags.length);
+  
   try {
     const response = await requests.countByEvents(
       props.list,
-      props.filters.sources,
-      props.filters.hostnames,
-      props.filters.priorities,
+      sources,
+      hostnames,
+      priorities,
       props.filters.rule,
       props.filters.search,
-      props.filters.tags,
+      tags,
       props.filters.since,
     );
     

@@ -1,6 +1,6 @@
 <template>
   <v-card class="elevation-0">
-    <v-row>
+    <v-row class="mt-4">
       <v-col
       cols="12"
       sm="12">
@@ -134,12 +134,13 @@ const setFilters = (f) => {
   console.log('[DashboardPage] setFilters called with:', f);
   console.log('[DashboardPage] f.priorities:', f.priorities);
   console.log('[DashboardPage] f.sources:', f.sources);
+  console.log('[DashboardPage] f.tags:', f.tags);
   console.log('[DashboardPage] f.since:', f.since);
-  // Mutate properties individually to trigger Vue reactivity properly
-  filters.value.priorities = f.priorities;
-  filters.value.sources = f.sources;
-  filters.value.hostnames = f.hostnames;
-  filters.value.tags = f.tags;
+  // Use Array.from to create plain arrays, preventing Vue from wrapping them in Proxies
+  filters.value.priorities = Array.from(f.priorities || []);
+  filters.value.sources = Array.from(f.sources || []);
+  filters.value.hostnames = Array.from(f.hostnames || []);
+  filters.value.tags = Array.from(f.tags || []);
   filters.value.rule = f.rule;
   filters.value.since = f.since;
   filters.value.search = f.search;

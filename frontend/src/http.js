@@ -83,6 +83,7 @@ export const requests = {
     });
   },
   countByEvents(group, source, hostname, priority, rule, filter, tags, since) {
+    console.log('[HTTP] countByEvents called with tags:', tags, 'Type:', typeof tags, 'IsArray:', Array.isArray(tags));
     const params = {};
     if (source && source.length > 0) params.source = Array.isArray(source) ? source.join(',') : `${source}`;
     if (hostname && hostname.length > 0) params.hostname = Array.isArray(hostname) ? hostname.join(',') : `${hostname}`;
@@ -91,6 +92,7 @@ export const requests = {
     if (filter && filter.length > 0) params.filter = `${filter}`;
     if (tags && tags.length > 0 && tags[0]) params.tags = Array.isArray(tags) ? tags.join(',') : `${tags}`;
     if (since && since.length > 0) params.since = `${since}`;
+    console.log('[HTTP] Request params:', params);
 
     return api.request({
       url: `/events/count/${group}`,

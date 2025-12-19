@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-app-bar color="blue-darken-2" theme="dark">
+    <v-app-bar :color="$store.state.headerFooterColor" theme="dark">
       <v-img
         src="https://github.com/falcosecurity/falcosidekick/raw/master/imgs/falcosidekick_color.png"
         max-height="40"
@@ -34,7 +34,7 @@
     <v-main>
       <router-view></router-view>
     </v-main>
-    <v-footer color="blue-darken-2" theme="dark" app>
+    <v-footer :color="$store.state.headerFooterColor" theme="dark" app>
       <span>
         2025 - <a href="https://github.com/falcosecurity/falcosidekick-ui" class="text-white">Falco Authors</a>
       </span>

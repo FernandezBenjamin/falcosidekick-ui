@@ -98,7 +98,7 @@
         <Counters
           :filters="filters"
           :ticer="ticer"
-          @add-item-to-filters="addItemToFilters('priorities', ...arguments)"
+          @add-item-to-filters="(item) => addItemToFilters('priorities', item)"
         ></Counters>
       </v-col>
     </v-row>
