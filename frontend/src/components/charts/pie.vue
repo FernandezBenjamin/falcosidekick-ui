@@ -25,6 +25,7 @@ const props = defineProps({
   chartId: { type: String, default: 'pie-chart' },
   width: { type: Number, default: 400 },
   height: { type: Number, default: 400 },
+  filterKey: { type: Number, default: 0 },
   filters: {
     type: Object,
     default() {
@@ -51,6 +52,14 @@ const ticer = computed(() => store.state.ticer);
 
 async function updateChart() {
   console.log('[PieChart] Updating chart for list:', props.list);
+  console.log('[PieChart] Current filters:', {
+    sources: props.filters.sources,
+    hostnames: props.filters.hostnames,
+    priorities: props.filters.priorities,
+    rule: props.filters.rule,
+    tags: props.filters.tags,
+    since: props.filters.since
+  });
   
   try {
     const response = await requests.countByEvents(

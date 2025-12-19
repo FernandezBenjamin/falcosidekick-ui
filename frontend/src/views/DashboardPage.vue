@@ -5,7 +5,7 @@
       cols="12"
       sm="12">
         <Filters
-        @send-filters="setFilters(...arguments)"
+        @send-filters="setFilters"
         :addItem="newItem"
         >
         </Filters>
@@ -21,7 +21,8 @@
           id="countBySource"
           list="source"
           :filters="filters"
-          @picked-item="addToFilters(...arguments)">
+          :filterKey="filterKey"
+          @picked-item="addToFilters">
           </PieChart>
           </v-card>
       </v-col>
@@ -34,7 +35,8 @@
           id="countByPriority"
           list="priority"
           :filters="filters"
-          @picked-item="addToFilters(...arguments)">
+          :filterKey="filterKey"
+          @picked-item="addToFilters">
           </PieChart>
           </v-card>
       </v-col>
@@ -47,7 +49,8 @@
           id="countByTag"
           list="tags"
           :filters="filters"
-          @picked-item="addToFilters(...arguments)">
+          :filterKey="filterKey"
+          @picked-item="addToFilters">
           </PieChart>
           </v-card>
       </v-col>
@@ -62,7 +65,8 @@
             id="countByRules"
             list="rule"
             :filters="filters"
-            @picked-item="addToFilters(...arguments)">
+            :filterKey="filterKey"
+            @picked-item="addToFilters">
             </BarChart>
         </v-card>
       </v-col>
@@ -76,8 +80,9 @@
             <TimelineChart
             id="timeline-priority"
             :filters="filters"
+            :filterKey="filterKey"
             groupby="priority"
-            @picked-item="addToFilters(...arguments)">
+            @picked-item="addToFilters">
             </TimelineChart>
         </v-card>
       </v-col>
@@ -91,8 +96,9 @@
             <TimelineChart
             id="timeline-source"
             :filters="filters"
+            :filterKey="filterKey"
             groupby="source"
-            @picked-item="addToFilters(...arguments)">
+            @picked-item="addToFilters">
             </TimelineChart>
         </v-card>
       </v-col>
@@ -122,8 +128,25 @@ const filters = ref({
   search: '',
 });
 
+const filterKey = ref(0);
+
 const setFilters = (f) => {
-  filters.value = f;
+  console.log('[DashboardPage] setFilters called with:', f);
+  console.log('[DashboardPage] f.priorities:', f.priorities);
+  console.log('[DashboardPage] f.sources:', f.sources);
+  console.log('[DashboardPage] f.since:', f.since);
+  // Mutate properties individually to trigger Vue reactivity properly
+  filters.value.priorities = f.priorities;
+  filters.value.sources = f.sources;
+  filters.value.hostnames = f.hostnames;
+  filters.value.tags = f.tags;
+  filters.value.rule = f.rule;
+  filters.value.since = f.since;
+  filters.value.search = f.search;
+  
+  // Increment key to force child components to detect the change
+  filterKey.value++;
+  console.log('[DashboardPage] filterKey incremented to:', filterKey.value);
 };
 
 const addToFilters = (l, i) => {

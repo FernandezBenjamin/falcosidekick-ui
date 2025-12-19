@@ -28,6 +28,7 @@ const props = defineProps({
   width: { type: Number, default: 400 },
   height: { type: Number, default: 400 },
   groupby: { type: String, default: '' },
+  filterKey: { type: Number, default: 0 },
   filters: {
     type: Object,
     default() {
@@ -350,6 +351,11 @@ if (typeof route.query.filter !== 'undefined') {
 if (typeof route.query.since !== 'undefined') {
   props.filters.since = route.query.since;
 }
+
+watch(() => props.filterKey, () => {
+  console.log('[TimelineChart] FilterKey changed, updating chart');
+  updateChart();
+});
 
 watch(() => props.filters, () => {
   console.log('[TimelineChart] Filters changed, updating chart');

@@ -106,7 +106,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, toRaw } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import { requests } from '../http';
@@ -287,35 +287,123 @@ watch(() => props.addItem, () => {
   }
 }, { deep: true });
 
-watch(() => filters.value, () => {
-  if (route.query.since !== filters.value.since || route.query.since === '') {
+// Function to emit filter changes
+const emitFilters = () => {
+  console.log('[Filters] emitFilters called');
+  console.log('[Filters] Current filter values:', {
+    priorities: filters.value.priorities,
+    sources: filters.value.sources,
+    hostnames: filters.value.hostnames,
+    tags: filters.value.tags,
+    rule: filters.value.rule,
+    since: filters.value.since,
+    search: filters.value.search
+  });
+  
+  // Build new query params - combine all updates into a single router.push
+  const newQuery = { ...route.query, since: filters.value.since };
+  
+  if (filters.value.priorities.length > 0) {
+    newQuery.priority = filters.value.priorities;
+  } else {
+    delete newQuery.priority;
+  }
+  
+  if (filters.value.sources.length > 0) {
+    newQuery.source = filters.value.sources;
+  } else {
+    delete newQuery.source;
+  }
+  
+  if (filters.value.hostnames.length > 0) {
+    newQuery.hostname = filters.value.hostnames;
+  } else {
+    delete newQuery.hostname;
+  }
+  
+  if (filters.value.rule !== '') {
+    newQuery.rule = filters.value.rule;
+  } else {
+    delete newQuery.rule;
+  }
+  
+  if (filters.value.tags.length > 0) {
+    newQuery.tags = filters.value.tags;
+  } else {
+    delete newQuery.tags;
+  }
+  
+  if (filters.value.search !== '') {
+    newQuery.filter = filters.value.search;
+  } else {
+    delete newQuery.filter;
+  }
+  
+  // Update route with all query params at once
+  router.push({ query: newQuery });
+  
+  // Use toRaw to completely unwrap all Vue reactivity, then create plain copies
+  const rawFilters = toRaw(filters.value);
+  
+  // Create completely plain JavaScript object with no reactivity
+  const plainFilters = {
+    priorities: Array.isArray(rawFilters.priorities) ? Array.from(rawFilters.priorities) : [],
+    sources: Array.isArray(rawFilters.sources) ? Array.from(rawFilters.sources) : [],
+    hostnames: Array.isArray(rawFilters.hostnames) ? Array.from(rawFilters.hostnames) : [],
+    tags: Array.isArray(rawFilters.tags) ? Array.from(rawFilters.tags) : [],
+    rule: typeof rawFilters.rule === 'string' ? rawFilters.rule : (Array.isArray(rawFilters.rule) && rawFilters.rule.length > 0 ? rawFilters.rule[0] : ''),
+    since: rawFilters.since || '24h',
+    search: rawFilters.search || ''
+  };
+  
+  console.log('[Filters] Plain filters created:', plainFilters);
+  console.log('[Filters] Priorities type:', typeof plainFilters.priorities, 'Value:', plainFilters.priorities);
+  console.log('[Filters] Emitting send-filters event');
+  emit('send-filters', plainFilters);
+};
+
+// Watch individual filter properties
+watch(() => filters.value.priorities, () => {
+  console.log('[Filters] Priorities changed:', filters.value.priorities);
+  emitFilters();
+}, { deep: true });
+
+watch(() => filters.value.sources, () => {
+  console.log('[Filters] Sources changed:', filters.value.sources);
+  emitFilters();
+}, { deep: true });
+
+watch(() => filters.value.hostnames, () => {
+  console.log('[Filters] Hostnames changed:', filters.value.hostnames);
+  emitFilters();
+}, { deep: true });
+
+watch(() => filters.value.tags, () => {
+  console.log('[Filters] Tags changed:', filters.value.tags);
+  emitFilters();
+}, { deep: true });
+
+watch(() => filters.value.rule, () => {
+  console.log('[Filters] Rule changed:', filters.value.rule);
+  emitFilters();
+});
+
+watch(() => filters.value.search, () => {
+  console.log('[Filters] Search changed:', filters.value.search);
+  emitFilters();
+});
+
+watch(() => filters.value.since, (newSince, oldSince) => {
+  console.log('[Filters] Since changed from', oldSince, 'to', newSince);
+  if (newSince !== oldSince) {
     listItems('source');
     listItems('hostname');
     listItems('priority');
     listItems('rule');
     listItems('tags');
-    router.push({ query: { ...route.query, since: filters.value.since } });
   }
-  if (filters.value.priorities.length > 0) {
-    router.push({ query: { ...route.query, priority: filters.value.priorities } });
-  }
-  if (filters.value.sources.length > 0) {
-    router.push({ query: { ...route.query, source: filters.value.sources } });
-  }
-  if (filters.value.hostnames.length > 0) {
-    router.push({ query: { ...route.query, hostname: filters.value.hostnames } });
-  }
-  if (filters.value.rule !== '') {
-    router.push({ query: { ...route.query, rule: filters.value.rule } });
-  }
-  if (filters.value.tags.length > 0) {
-    router.push({ query: { ...route.query, tags: filters.value.tags } });
-  }
-  if (filters.value.search !== '') {
-    router.push({ query: { ...route.query, filter: filters.value.search } });
-  }
-  emit('send-filters', filters.value);
-}, { deep: true });
+  emitFilters();
+});
 
 watch(ticer, () => {
   listItems('priority');
