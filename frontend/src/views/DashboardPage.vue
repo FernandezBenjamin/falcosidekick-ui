@@ -144,7 +144,7 @@ const setFilters = (f) => {
   filters.value.rule = f.rule;
   filters.value.since = f.since;
   filters.value.search = f.search;
-  
+
   // Increment key to force child components to detect the change
   filterKey.value++;
   console.log('[DashboardPage] filterKey incremented to:', filterKey.value);
@@ -157,4 +157,3 @@ const addToFilters = (l, i) => {
   };
 };
 </script>
-

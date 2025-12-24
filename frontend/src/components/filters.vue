@@ -299,52 +299,52 @@ const emitFilters = () => {
     since: filters.value.since,
     search: filters.value.search
   });
-  
+
   // Build new query params - combine all updates into a single router.push
   const newQuery = { ...route.query, since: filters.value.since };
-  
+
   if (filters.value.priorities.length > 0) {
     newQuery.priority = filters.value.priorities;
   } else {
     delete newQuery.priority;
   }
-  
+
   if (filters.value.sources.length > 0) {
     newQuery.source = filters.value.sources;
   } else {
     delete newQuery.source;
   }
-  
+
   if (filters.value.hostnames.length > 0) {
     newQuery.hostname = filters.value.hostnames;
   } else {
     delete newQuery.hostname;
   }
-  
+
   if (filters.value.rule !== '') {
     newQuery.rule = filters.value.rule;
   } else {
     delete newQuery.rule;
   }
-  
+
   if (filters.value.tags.length > 0) {
     newQuery.tags = filters.value.tags;
   } else {
     delete newQuery.tags;
   }
-  
+
   if (filters.value.search !== '') {
     newQuery.filter = filters.value.search;
   } else {
     delete newQuery.filter;
   }
-  
+
   // Update route with all query params at once
   router.push({ query: newQuery });
-  
+
   // Use toRaw to completely unwrap all Vue reactivity, then create plain copies
   const rawFilters = toRaw(filters.value);
-  
+
   // Create completely plain JavaScript object with no reactivity
   const plainFilters = {
     priorities: Array.isArray(rawFilters.priorities) ? Array.from(rawFilters.priorities) : [],
@@ -355,7 +355,7 @@ const emitFilters = () => {
     since: rawFilters.since || '24h',
     search: rawFilters.search || ''
   };
-  
+
   console.log('[Filters] Plain filters created:', plainFilters);
   console.log('[Filters] Priorities type:', typeof plainFilters.priorities, 'Value:', plainFilters.priorities);
   console.log('[Filters] Emitting send-filters event');

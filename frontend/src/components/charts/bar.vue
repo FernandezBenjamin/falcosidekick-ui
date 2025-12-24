@@ -60,13 +60,13 @@ async function updateChart() {
     tags: props.filters.tags,
     since: props.filters.since
   });
-  
+
   // Unwrap reactive proxies before passing to API
   const sources = toRaw(props.filters.sources) || [];
   const hostnames = toRaw(props.filters.hostnames) || [];
   const priorities = toRaw(props.filters.priorities) || [];
   const tags = toRaw(props.filters.tags) || [];
-  
+
   try {
     const response = await requests.countByEvents(
       props.list,
@@ -78,9 +78,9 @@ async function updateChart() {
       tags,
       props.filters.since,
     );
-    
+
     console.log('[BarChart] Received data:', response.data.results);
-    
+
     values.value = Object.entries(response.data.results)
       .sort(([, v1], [, v2]) => v2 - v1)
       .reduce((obj, [k, v]) => ({ ...obj, [k]: v }), {});
@@ -92,12 +92,12 @@ async function updateChart() {
   // Prepare chart data
   const lb = [];
   const dt = [];
-  
+
   Object.entries(values.value).forEach(([key, value]) => {
     lb.push(key);
     dt.push(value);
   });
-  
+
   console.log('[BarChart] Chart update - labels:', lb.length, 'data points:', dt.length);
 
   // Update chart if it exists
@@ -106,7 +106,7 @@ async function updateChart() {
       // ShallowRef prevents deep reactivity, so we can assign directly
       chart.value.data.labels = [...lb];
       chart.value.data.datasets[0].data = [...dt];
-      
+
       chart.value.update();
       console.log('[BarChart] Chart updated successfully');
     } catch (error) {
@@ -119,15 +119,15 @@ async function updateChart() {
 
 async function initChart() {
   await nextTick(); // Wait for DOM to be ready
-  
+
   const ctx = document.getElementById(canvasId.value);
   if (!ctx) {
     console.error('[BarChart] Canvas element not found with id:', canvasId.value);
     return;
   }
-  
+
   console.log('[BarChart] Initializing chart on canvas:', canvasId.value);
-  
+
   try {
     chart.value = new ChartJS(ctx, {
       type: 'bar',

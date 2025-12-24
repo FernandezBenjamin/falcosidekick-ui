@@ -106,7 +106,7 @@ for ((i=1; i<=COUNT; i++)); do
   response=$(curl -sS -w "\n%{http_code}" -u "${USER}:${PASS}" -H "Content-Type: application/json" -d "${PAYLOAD}" "${BASE_URL}${API_PATH}")
   status=$(echo "$response" | tail -1)
   body=$(echo "$response" | head -n -1)
-  
+
   if [[ "$status" == "200" ]]; then
     echo "[$(printf "%03d" "$i")] ✓"
   else

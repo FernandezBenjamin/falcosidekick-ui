@@ -2,12 +2,11 @@
   <div>
     <canvas
       :id="id"
-      height="80"
+      height="400"
       class="ml-10 pr-15"
     ></canvas>
   </div>
 </template>
-
 <script setup>
 import { ref, computed, watch, onMounted, nextTick, shallowRef, toRaw } from 'vue';
 import { useStore } from 'vuex';
@@ -17,12 +16,9 @@ import dayjs from 'dayjs';
 import 'chartjs-adapter-moment';
 import { requests } from '../../http';
 import { utils } from '../../utils';
-
 ChartJS.register(...registerables);
-
 const store = useStore();
 const route = useRoute();
-
 const props = defineProps({
   id: { type: String, default: 'timeline-chart' },
   width: { type: Number, default: 400 },
@@ -44,15 +40,11 @@ const props = defineProps({
     },
   },
 });
-
 const emit = defineEmits(['picked-item']);
-
 const chart = shallowRef(null);
 const stats = ref({});
 const isUpdating = ref(false);
-
 const ticer = computed(() => store.state.ticer);
-
 function pickItem(event, array) {
   if (array.length > 0 && chart.value) {
     const dataset = chart.value.data.datasets[array[0].datasetIndex];
@@ -62,7 +54,6 @@ function pickItem(event, array) {
     }
   }
 }
-
 function getTimeConfig(since) {
   const configs = {
     '5min': { unit: 'second', delta: 5, oldest: 300 },
@@ -82,7 +73,6 @@ function getTimeConfig(since) {
     '1y': { unit: 'day', delta: 15, oldest: 365, timeUnit: 'month' },
     '2y': { unit: 'day', delta: 30, oldest: 730, timeUnit: 'quarter' },
   };
-  
   const config = configs[since] || { unit: 'minute', delta: 1, oldest: 60, timeUnit: 'minute' };
   return {
     unit: config.unit,
@@ -91,18 +81,14 @@ function getTimeConfig(since) {
     timeUnit: config.timeUnit || config.unit,
   };
 }
-
 async function searchEvents(page, last) {
   const limit = 500;
-  
   console.log('[TimelineChart] Fetching events - page:', page, 'last:', last);
-  
   // Unwrap reactive proxies before passing to API
   const sources = toRaw(props.filters.sources) || [];
   const hostnames = toRaw(props.filters.hostnames) || [];
   const priorities = toRaw(props.filters.priorities) || [];
   const tags = toRaw(props.filters.tags) || [];
-  
   try {
     const response = await requests.searchEvents(
       sources,
@@ -115,7 +101,6 @@ async function searchEvents(page, last) {
       page,
       limit,
     );
-    
     // Normalize results to array - handle both array and object responses
     let results = [];
     if (Array.isArray(response.data.results)) {
@@ -123,31 +108,24 @@ async function searchEvents(page, last) {
     } else if (response.data.results && typeof response.data.results === 'object') {
       results = Object.values(response.data.results);
     }
-    
     const returned = response.data.statistics?.returned || 0;
-    
     console.log('[TimelineChart] Received', results.length, 'events, returned:', returned);
-    
     if (results.length === 0) {
       if (chart.value) {
         chart.value.update();
       }
       return;
     }
-    
     const timeConfig = getTimeConfig(props.filters.since);
     const { unit, delta, oldest } = timeConfig;
-    
     let l = last;
     if (l === undefined) {
       l = dayjs().add(delta, unit).toISOString();
     }
-    
     // Process events
     results.forEach((value) => {
       // Handle both direct event objects and wrapped ones
       const event = value.raw || value;
-      
       let f = '';
       switch (props.groupby) {
         case 'priority':
@@ -160,16 +138,13 @@ async function searchEvents(page, last) {
           f = 'all';
           break;
       }
-      
       if (!stats.value[f]) {
         stats.value[f] = {
           count: 0,
           data: [{ x: l, y: 0 }],
         };
       }
-      
       stats.value[f].count += 1;
-      
       if (dayjs(event.time).isBefore(dayjs(l).subtract(delta, unit))) {
         Object.keys(stats.value).forEach((key) => {
           stats.value[key].data.push({
@@ -182,7 +157,6 @@ async function searchEvents(page, last) {
         stats.value[f].count = 0;
       }
     });
-    
     // Fetch more pages if needed
     if (limit === returned) {
       let d = 1;
@@ -198,11 +172,9 @@ async function searchEvents(page, last) {
           y: 0,
         });
       });
-      
       // Update chart datasets
       if (chart.value) {
         const datasets = [];
-        
         Object.keys(stats.value).forEach((key) => {
           let bgc = '';
           switch (props.groupby) {
@@ -216,7 +188,6 @@ async function searchEvents(page, last) {
               bgc = '#1976d2';
               break;
           }
-          
           datasets.push({
             label: key,
             barThickness: 25,
@@ -224,7 +195,6 @@ async function searchEvents(page, last) {
             data: stats.value[key].data,
           });
         });
-        
         // Sort datasets
         datasets.sort((data1, data2) => {
           const obj1 = data1.label.toUpperCase();
@@ -233,7 +203,6 @@ async function searchEvents(page, last) {
           if (obj1 > obj2) return 1;
           return 0;
         });
-        
         // Update chart data (shallowRef prevents deep reactivity)
         chart.value.data.datasets = datasets.map(ds => ({
           label: ds.label,
@@ -241,7 +210,6 @@ async function searchEvents(page, last) {
           backgroundColor: ds.backgroundColor,
           data: [...ds.data]
         }));
-        
         console.log('[TimelineChart] Updated with', datasets.length, 'datasets');
         chart.value.update();
       }
@@ -253,46 +221,37 @@ async function searchEvents(page, last) {
     }
   }
 }
-
 async function updateChart() {
   if (isUpdating.value) {
     console.log('[TimelineChart] Update already in progress, skipping...');
     return;
   }
-  
   isUpdating.value = true;
   console.log('[TimelineChart] Starting chart update');
-  
   try {
     // Reset chart data
     if (chart.value) {
       chart.value.data.datasets = [];
-      
       // Update time scale configuration
       const timeConfig = getTimeConfig(props.filters.since);
       if (chart.value.options.scales && chart.value.options.scales.x && chart.value.options.scales.x.time) {
         chart.value.options.scales.x.time.unit = timeConfig.timeUnit;
       }
     }
-    
     stats.value = {};
     await searchEvents(0);
   } finally {
     isUpdating.value = false;
   }
 }
-
 async function initChart() {
   await nextTick(); // Wait for DOM to be ready
-  
   const ctx = document.getElementById(props.id);
   if (!ctx) {
     console.error('[TimelineChart] Canvas element not found with id:', props.id);
     return;
   }
-  
   console.log('[TimelineChart] Initializing chart on canvas:', props.id);
-  
   try {
     chart.value = new ChartJS(ctx, {
       type: 'bar',
@@ -334,7 +293,6 @@ async function initChart() {
     console.error('[TimelineChart] Error initializing chart:', error);
   }
 }
-
 // Initialize from route query
 if (typeof route.query.source !== 'undefined') {
   props.filters.sources = route.query.source;
@@ -357,22 +315,18 @@ if (typeof route.query.filter !== 'undefined') {
 if (typeof route.query.since !== 'undefined') {
   props.filters.since = route.query.since;
 }
-
 watch(() => props.filterKey, () => {
   console.log('[TimelineChart] FilterKey changed, updating chart');
   updateChart();
 });
-
 watch(() => props.filters, () => {
   console.log('[TimelineChart] Filters changed, updating chart');
   updateChart();
 }, { deep: true });
-
 watch(ticer, () => {
   console.log('[TimelineChart] Ticer changed, updating chart');
   updateChart();
 });
-
 onMounted(() => {
   initChart();
 });
